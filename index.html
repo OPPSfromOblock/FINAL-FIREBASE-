@@ -1,0 +1,1414 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gurukul Points Management - GSTATUS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS library for XLSX parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f8f9fa;
+            --dark-bg: #343a40;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            margin-top: 20px;
+            max-width: 1200px;
+        }
+        
+        .tab-content {
+            padding: 25px;
+            background-color: white;
+            border-left: 1px solid #dee2e6;
+            border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 0 0 8px 8px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .nav-tabs {
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--secondary-color);
+            font-weight: 500;
+            border: none;
+            padding: 12px 20px;
+            transition: all 0.3s;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: white;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        h1, h2, h3, h4 {
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            text-align: center;
+            color: var(--primary-color);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            border-radius: 8px 8px 0 0 !important;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .table {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background-color: var(--secondary-color);
+            color: white;
+            font-weight: 500;
+        }
+        
+        .table tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 4px;
+            padding: 10px;
+            border: 1px solid #ced4da;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+        
+        .exam-input {
+            display: none;
+            margin-top: 10px;
+        }
+        
+        .update-message {
+            display: none;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        .student-card {
+            border-left: 4px solid var(--primary-color);
+            transition: all 0.3s;
+        }
+        
+        .student-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .points-badge {
+            font-size: 1rem;
+            padding: 5px 10px;
+            border-radius: 50px;
+        }
+        
+        .positive-points {
+            background-color: rgba(39, 174, 96, 0.2);
+            color: var(--success-color);
+        }
+        
+        .negative-points {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        
+        .active-status {
+            background-color: rgba(39, 174, 96, 0.2);
+            color: var(--success-color);
+        }
+        
+        .inactive-status {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger-color);
+        }
+        
+        .action-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-section {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+        }
+        
+        .system-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 20px;
+        }
+        
+        .system-status i {
+            font-size: 2rem;
+            margin-right: 15px;
+            color: var(--success-color);
+        }
+        
+        .greeting {
+            font-size: 1.5rem;
+            color: var(--secondary-color);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .tab-pane {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .remark-input {
+            min-width: 150px;
+            border-radius: 4px;
+            padding: 5px;
+            border: 1px solid #ced4da;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container">
+        <h1 class="mb-4">
+            <i class="fas fa-star"></i> Gurukul Points Management System <i class="fas fa-star"></i>
+        </h1>
+
+        <!-- Tabs Navigation -->
+        <ul class="nav nav-tabs" id="gurukulTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" id="home-tab" data-bs-toggle="tab" href="#home" role="tab">
+                    <i class="fas fa-home"></i> Home
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="administration-tab" data-bs-toggle="tab" href="#administration" role="tab">
+                    <i class="fas fa-user-edit"></i> Administration
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="rankings-tab" data-bs-toggle="tab" href="#rankings" role="tab">
+                    <i class="fas fa-trophy"></i> Rankings
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" id="responses-tab" data-bs-toggle="tab" href="#responses" role="tab">
+                    <i class="fas fa-history"></i> History
+                </a>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Home Tab -->
+            <div class="tab-pane fade show active" id="home" role="tabpanel">
+                <div class="greeting">
+                    <i class="fas fa-hands-praying"></i> Jai Swaminarayan <i class="fas fa-hands-praying"></i>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="system-status">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <h4>System Status</h4>
+                                <p class="mb-0"><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+                                <p class="mb-0"><strong>Version:</strong> 2.0</p>
+                                <p class="mb-0"><strong>Last Updated:</strong> Today</p>
+                                <p class="mb-0"><strong>Database:</strong> <span id="dbStatus" class="badge bg-success">Connected</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <i class="fas fa-info-circle"></i> Quick Stats
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="text-center mb-3">
+                                            <h3 class="text-primary" id="totalStudents">0</h3>
+                                            <p class="mb-0">Total Students</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-center mb-3">
+                                            <h3 class="text-success" id="activeStudents">0</h3>
+                                            <p class="mb-0">Active Students</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="fas fa-bullhorn"></i> Announcements
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Next room cleaning competition will be held on Friday.
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Please ensure all students follow the dress code.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Administration Tab -->
+            <div class="tab-pane fade" id="administration" role="tabpanel">
+                <h3><i class="fas fa-user-edit"></i> Student Management</h3>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-search"></i> Search Students
+                    </div>
+                    <div class="card-body">
+                        <div class="search-container">
+                            <input type="text" class="form-control" id="searchQueryPoints" placeholder="Search by name, ID, floor, or room...">
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                        <div id="searchResultsPoints" class="mb-3 row"></div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-plus-circle"></i> Update Points
+                    </div>
+                    <div class="card-body">
+                        <form id="pointsForm">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="action-section">
+                                        <h4><i class="fas fa-thumbs-up text-success"></i> Positive Actions</h4>
+                                        <select name="positiveAction" class="form-select mb-3" id="positiveAction">
+                                            <option value="">Select a positive action</option>
+                                            <option value="5">Participation in competition (+5)</option>
+                                            <option value="5">Helping others (+5)</option>
+                                            <option value="10">Room cleaning competition 1st (+10)</option>
+                                            <option value="7">Room cleaning competition 2nd (+7)</option>
+                                            <option value="5">Room cleaning competition 3rd (+5)</option>
+                                            <option value="15">Winners in competition (+15)</option>
+                                            <option value="10">Good discipline (+10)</option>
+                                            <option value="exam">According to percentage (exam)</option>
+                                        </select>
+                                        <div class="exam-input" id="examPercentage">
+                                            <label for="percentageInput" class="form-label">Enter Exam Percentage</label>
+                                            <input type="number" class="form-control" id="percentageInput" placeholder="e.g., 85" min="0" max="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="action-section">
+                                        <h4><i class="fas fa-thumbs-down text-danger"></i> Negative Actions</h4>
+                                        <select name="negativeAction" class="form-select mb-3">
+                                            <option value="">Select a negative action</option>
+                                            <option value="-5">No Dress code (-5)</option>
+                                            <option value="-3">Incomplete homework (-3)</option>
+                                            <option value="-3">Late from playing bell (-3)</option>
+                                            <option value="-10">Absent to school (-10)</option>
+                                            <option value="-7">No room cleaning (-7)</option>
+                                            <option value="-10">Late for prayer (-10)</option>
+                                            <option value="-10">Fighting (-10)</option>
+                                            <option value="-5">Indiscipline in study hour (-5)</option>
+                                            <option value="-5">Roaming outside (-5)</option>
+                                            <option value="-10">Not speaking in English (-10)</option>
+                                            <option value="-10">Late for pooja (-10)</option>
+                                            <option value="-3">Talking in studying (-3)</option>
+                                            <option value="-10">No discipline (-10)</option>
+                                            <option value="-5">Speaking Bad words (-5)</option>
+                                            <option value="-10">Disobeying in-charges (-10)</option>
+                                            <option value="-20">Damaging gurukul properties (-20)</option>
+                                            <option value="-3">No pooja equipment (-3)</option>
+                                            <option value="-3">No cupboard cleaning (-3)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-3">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-save"></i> Update Points
+                                </button>
+                            </div>
+                        </form>
+                        <div class="update-message alert alert-success mt-3" id="updateMessage"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rankings Tab -->
+            <div class="tab-pane fade" id="rankings" role="tabpanel">
+                <h3><i class="fas fa-trophy"></i> Student Rankings</h3>
+                
+                <div class="filter-section">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="search-container">
+                                <input type="text" class="form-control" id="searchQueryRankings" placeholder="Search students...">
+                                <i class="fas fa-search search-icon"></i>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="gradeFilter" class="form-label">Filter by Grade</label>
+                            <select class="form-select" id="gradeFilter">
+                                <option value="all">All Grades</option>
+                                <option value="A+">A+</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="floorFilter" class="form-label">Filter by Floor</label>
+                            <select class="form-select" id="floorFilter">
+                                <option value="all">All Floors</option>
+                                <option value="1">1st Floor</option>
+                                <option value="2">2nd Floor</option>
+                                <option value="3">3rd Floor</option>
+                                <option value="4">4th Floor</option>
+                                <option value="5">5th Floor</option>
+                                <option value="6">6th Floor</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end mt-3">
+                        <button class="btn btn-primary" id="refreshRankings">
+                            <i class="fas fa-sync-alt"></i> Refresh Rankings
+                        </button>
+                        <button class="btn btn-success ms-2" id="exportRankings">
+                            <i class="fas fa-file-excel"></i> Export to Excel
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Rank</th>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Room</th>
+                                <th>Floor</th>
+                                <th>Points</th>
+                                <th>Grade</th>
+                                <th>Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rankingsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Responses Tab -->
+            <div class="tab-pane fade" id="responses" role="tabpanel">
+                <h3><i class="fas fa-history"></i> Points History</h3>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <i class="fas fa-list"></i> Recent Activity
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button class="btn btn-sm btn-danger" id="clearHistory">
+                                    <i class="fas fa-trash"></i> Clear History
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                        <th>Student ID</th>
+                                        <th>Name</th>
+                                        <th>Action</th>
+                                        <th>Points Changed</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="responseTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Default student data
+        const allStudents = [
+             { id: "AE6221", room: "501/1", name: "BORRA RESHVANTH SAI", points: 0, floor: "5", active: true },
+    { id: "AF5225", room: "501/2", name: "GUNJHI REVANTH", points: 0, floor: "5", active: true },
+    { id: "AF7827", room: "501/3", name: "PARIHAR YASHVEER", points: 0, floor: "5", active: true },
+    { id: "AE6634", room: "501/4", name: "PRAJAPATI ANSH ANILKUMAR", points: 0, floor: "5", active: true },
+    { id: "AF5550", room: "501/5", name: "Vishwanath Ayyappa Gogu", points: 0, floor: "5", active: true },
+    { id: "AF5553", room: "501/6", name: "Vishwatejeshwarnath Gogu", points: 0, floor: "5", active: true },
+    { id: "AF7625", room: "501/7", name: "KOTA VIKRANTH", points: 0, floor: "5", active: true },
+    { id: "AG4614", room: "501/8", name: "GUGULAVATH SREE KOUTILYA", points: 0, floor: "5", active: true },
+    { id: "AD8939", room: "501/9", name: "B AKSHAY", points: 0, floor: "5", active: true },
+    { id: "AE8116", room: "501/10", name: "RUDRAKSH DEWASI", points: 0, floor: "5", active: true },
+    { id: "AG0619", room: "501/11", name: "Merige Devansh", points: 0, floor: "5", active: true },
+    { id: "AF7059", room: "502/1", name: "Sama Nihan Reddy", points: 0, floor: "5", active: true },
+    { id: "AE2513", room: "502/2", name: "PRATHICK PATIL", points: 0, floor: "5", active: true },
+    { id: "AF8025", room: "502/3", name: "PEDDA GOLLA SHIVAMANESHWAR", points: 0, floor: "5", active: true },
+    { id: "AF7192", room: "502/4", name: "NITISH MOIRANGTHEM", points: 0, floor: "5", active: true },
+    { id: "AF6118", room: "502/5", name: "DANDEMPALLY LOKESH", points: 0, floor: "5", active: true },
+    { id: "AG1127", room: "502/6", name: "PLUTUS LEISHANGTHEM", points: 0, floor: "5", active: true },
+    { id: "AF3953", room: "502/7", name: "DIKSHIT CHOUDHARY", points: 0, floor: "5", active: true },
+    { id: "AF7191", room: "502/8", name: "Devajit ngangom", points: 0, floor: "5", active: true },
+    { id: "AF2341", room: "502/10", name: "VEMURI VIHAAN ARRJUN", points: 0, floor: "5", active: true },
+    { id: "AE4939", room: "502/11", name: "MANISH KUMAWAT", points: 0, floor: "5", active: true },
+    { id: "AG0387", room: "502/12", name: "ISHANTH", points: 0, floor: "5", active: true },
+    { id: "AE5834", room: "502/13", name: "AMGOTH SHRI TANUSH", points: 0, floor: "5", active: true },
+    { id: "AF4448", room: "502/14", name: "VEMULA RAKSHITH", points: 0, floor: "5", active: true },
+    { id: "AE7699", room: "502/15", name: "JASWANTH KUMAR KHATRI", points: 0, floor: "5", active: true },
+    { id: "AF8026", room: "502/16", name: "BHANURI MANIDEEKSHITH", points: 0, floor: "5", active: true },
+    { id: "AE8804", room: "502/17", name: "NARENDRA PATEL", points: 0, floor: "5", active: true },
+    { id: "AF5304", room: "503/1", name: "MUNDE VIGENSH", points: 0, floor: "5", active: true },
+    { id: "AF3731", room: "503/2", name: "CHELMAL VIVEK", points: 0, floor: "5", active: true },
+    { id: "AE6037", room: "503/3", name: "SHLOK KULKARNI", points: 0, floor: "5", active: true },
+    { id: "AF0848", room: "503/4", name: "ALAKUNTA PARASHURAM", points: 0, floor: "5", active: true },
+    { id: "AG4164", room: "503/5", name: "AGIRU LAXMI SUJAY", points: 0, floor: "5", active: true },
+    { id: "AF5307", room: "503/6", name: "MUNDE RAGHAV", points: 0, floor: "5", active: true },
+    { id: "AE8367", room: "503/7", name: "VISHWAS REDDY JALLAPALLY", points: 0, floor: "5", active: true },
+    { id: "AF9187", room: "503/8", name: "PADMAWAR PRAJVAL PRAVIN", points: 0, floor: "5", active: true },
+    { id: "AF2740", room: "503/9", name: "Kattekolla Vishvajith", points: 0, floor: "5", active: true },
+    { id: "AF5404", room: "503/10", name: "SAMA SAAHAS REDDY", points: 0, floor: "5", active: true },
+    { id: "AE9416", room: "503/11", name: "CHEGURI NIKSHITH REDDY", points: 0, floor: "5", active: true },
+    { id: "AG0395", room: "503/12", name: "PIBGILI NIHAL REDDY", points: 0, floor: "5", active: true },
+    { id: "AF4468", room: "503/13", name: "AKUTHOTA VEEKSHITH", points: 0, floor: "5", active: true },
+    { id: "AG0386", room: "503/14", name: "MALANI MANAV", points: 0, floor: "5", active: true },
+    { id: "AF6424", room: "503/15", name: "Srimaan Vemula", points: 0, floor: "5", active: true },
+    { id: "AD9496", room: "504/1", name: "SREE DHEERAJ KAILA", points: 0, floor: "5", active: true },
+    { id: "AF5963", room: "504/2", name: "CHODABATHULA DAIVIK", points: 0, floor: "5", active: true },
+    { id: "AF2828", room: "504/4", name: "CHEGURI SUCHITH REDDY", points: 0, floor: "5", active: true },
+    { id: "AF0844", room: "504/5", name: "TALARI RITHWIK", points: 0, floor: "5", active: true },
+    { id: "AF3948", room: "504/6", name: "TENJARLA SAI KRISHNA", points: 0, floor: "5", active: true },
+    { id: "AF8387", room: "504/7", name: "PRITHEM MISHRA", points: 0, floor: "5", active: true },
+    { id: "AF9240", room: "504/8", name: "Nenavath Sai Swarup", points: 0, floor: "5", active: true },
+    { id: "AF5092", room: "504/9", name: "YERRI UMA SHANKAR", points: 0, floor: "5", active: true },
+    { id: "AF9292", room: "504/10", name: "NAMBURI GAURAV VARMA", points: 0, floor: "5", active: true },
+    { id: "AF1824", room: "504/11", name: "BALLA RISHIK VIJAYSURYA", points: 0, floor: "5", active: true },
+    { id: "AG2705", room: "504/12", name: "ASHUTOSH RAJ CHAURASIA", points: 0, floor: "5", active: true },
+    { id: "AF2316", room: "504/13", name: "GAMPA AARUSH", points: 0, floor: "5", active: true },
+    { id: "AG0388", room: "504/14", name: "Yerri Lohith Kumar", points: 0, floor: "5", active: true },
+    { id: "AF2404", room: "504/15", name: "THAMMISETTI YUVAN RAJ", points: 0, floor: "5", active: true },
+    { id: "AE0559", room: "505/1", name: "VANSH BHATI", points: 0, floor: "5", active: true },
+    { id: "AE8934", room: "505/2", name: "KUNTA SAI VARSHITH", points: 0, floor: "5", active: true },
+    { id: "AF4186", room: "505/3", name: "PAVAN GOVIND DHAGE", points: 0, floor: "5", active: true },
+    { id: "AF2998", room: "505/4", name: "Regalla Sai Vardhan Reddy", points: 0, floor: "5", active: true },
+    { id: "AF2411", room: "505/5", name: "IDARA MAHINDRA", points: 0, floor: "5", active: true },
+    { id: "AE4109", room: "505/6", name: "BHUVANESH PATEL", points: 0, floor: "5", active: true },
+    { id: "AE5784", room: "505/7", name: "BARLA HARSHAVARDHAN", points: 0, floor: "5", active: true },
+    { id: "AF9420", room: "505/8", name: "SHIVANK SAKLANI", points: 0, floor: "5", active: true },
+    { id: "AF9858", room: "505/9", name: "AAYUSH", points: 0, floor: "5", active: true },
+    { id: "AF9204", room: "505/10", name: "AVISHKAR", points: 0, floor: "5", active: true },
+    { id: "AG2748", room: "505/11", name: "KUNTA AKSHITH", points: 0, floor: "5", active: true },
+    { id: "AG0565", room: "505/12", name: "NARANI SAKETH", points: 0, floor: "5", active: true },
+    { id: "AF2710", room: "505/13", name: "Chelluri Jaya SreeRaam", points: 0, floor: "5", active: true },
+    { id: "AG0369", room: "505/14", name: "JOGINPALLY RAJ SHOURYA", points: 0, floor: "5", active: true },
+    { id: "AF2745", room: "505/15", name: "VANSH PREMJI PATEL", points: 0, floor: "5", active: true },
+    { id: "AF2868", room: "506/1", name: "ALLURI HARSHAVARDHAN", points: 0, floor: "5", active: true },
+    { id: "AF9973", room: "506/2", name: "K DEEVAMSH REDDY", points: 0, floor: "5", active: true },
+    { id: "AG4642", room: "506/3", name: "Luchingpeeba Irengbam", points: 0, floor: "5", active: true },
+    { id: "AF2609", room: "506/4", name: "AGNEYA", points: 0, floor: "5", active: true },
+    { id: "AF6958", room: "506/6", name: "JANGAMPETA RISHIL REDDY", points: 0, floor: "5", active: true },
+    { id: "AF2975", room: "506/7", name: "DESIDI YOJITH REDDY", points: 0, floor: "5", active: true },
+    { id: "AF9472", room: "506/8", name: "JUPELLI SRIHITESH", points: 0, floor: "5", active: true },
+    { id: "AF3164", room: "506/9", name: "JIVITHESH REDDY BALPUNOORI", points: 0, floor: "5", active: true },
+    { id: "AF9237", room: "506/10", name: "Tula Rohith Sai Surya", points: 0, floor: "5", active: true },
+    { id: "AE8191", room: "506/11", name: "GUDISE HARSHAVARDHAN", points: 0, floor: "5", active: true },
+    { id: "AF3636", room: "506/13", name: "PRAJWAL GONA", points: 0, floor: "5", active: true },
+    { id: "AG0419", room: "506/14", name: "TANISH SAI", points: 0, floor: "5", active: true },
+    { id: "AG1064", room: "507/1", name: "SONALE VEERESH", points: 0, floor: "5", active: true },
+    { id: "AG1171", room: "507/2", name: "Sangmeshwar Shantling Patri", points: 0, floor: "5", active: true },
+    { id: "AG1697", room: "507/3", name: "GANESH SHRINIWAS TAMMALWAR", points: 0, floor: "5", active: true },
+    { id: "AD5610", room: "507/4", name: "A AKSHITH REDDY", points: 0, floor: "5", active: true },
+    { id: "AF3928", room: "507/5", name: "VECHALAPU VEERA VENKATA JANITH", points: 0, floor: "5", active: true },
+    { id: "AG0224", room: "507/6", name: "ROHIT NARASIMHA JASTI", points: 0, floor: "5", active: true },
+    { id: "AF9734", room: "507/8", name: "JASHWANTH SAI BORRA", points: 0, floor: "5", active: true },
+    { id: "AF9351", room: "507/9", name: "RANVEER GUPTA", points: 0, floor: "5", active: true },
+    { id: "AG0566", room: "507/10", name: "Tangidipelly Sai Rudra", points: 0, floor: "5", active: true },
+    { id: "AG0567", room: "507/11", name: "Tangadipelly Mokshagna", points: 0, floor: "5", active: true },
+    { id: "AG0691", room: "507/12", name: "Gujjeti Siddhi Trinesh", points: 0, floor: "5", active: true },
+    { id: "AG3427", room: "507/13", name: "Manpuri Himanth Raj", points: 0, floor: "5", active: true },
+    { id: "AG0038", room: "507/14", name: "YATIN JAIN", points: 0, floor: "5", active: true },
+    { id: "AE7279", room: "507/15", name: "KAUSHAL GUPTA KORANGI", points: 0, floor: "5", active: true },
+    { id: "AF3103", room: "508/1", name: "SUSHANT TENKALE", points: 0, floor: "5", active: true },
+    { id: "AF3811", room: "508/2", name: "GUNTI SRI HARSHITH", points: 0, floor: "5", active: true },
+    { id: "AF3001", room: "508/3", name: "Pilli Adhvith Sri Chandra", points: 0, floor: "5", active: true },
+    { id: "AD9780", room: "508/5", name: "ARJUN G KULKARNI", points: 0, floor: "5", active: true },
+    { id: "AE8018", room: "508/6", name: "Sarthak Deepak Netragave", points: 0, floor: "5", active: true },
+    { id: "AE8366", room: "508/7", name: "VISHAL REDDY JALLAPALLY", points: 0, floor: "5", active: true },
+    { id: "AF2459", room: "508/8", name: "YUG KHODIYAR", points: 0, floor: "5", active: true },
+    { id: "AD5172", room: "508/9", name: "NAYAN KUMAR", points: 0, floor: "5", active: true },
+    { id: "AE0556", room: "508/10", name: "KARTHIK BHATI", points: 0, floor: "5", active: true },
+    { id: "AF2607", room: "508/11", name: "SIDDHAROODH", points: 0, floor: "5", active: true },
+    { id: "AF6138", room: "508/12", name: "SAINAND S BIRADAR", points: 0, floor: "5", active: true },
+    { id: "AF5498", room: "509/1", name: "PRITHVI SOLANKI", points: 0, floor: "5", active: true },
+    { id: "AF8276", room: "509/2", name: "Tanay Jain", points: 0, floor: "5", active: true },
+    { id: "AF4046", room: "509/3", name: "YOGIT PATEL", points: 0, floor: "5", active: true },
+    { id: "AE0893", room: "509/4", name: "KUNAL NITHIN PATEL", points: 0, floor: "5", active: true },
+    { id: "AD8385", room: "509/5", name: "T G Pranav", points: 0, floor: "5", active: true },
+    { id: "AG0011", room: "509/6", name: "DARSH SANGAMESHWAR DACHAWAR", points: 0, floor: "5", active: true },
+    { id: "AF4253", room: "509/7", name: "ADITYA MAHARUDRA BIRNALE", points: 0, floor: "5", active: true },
+    { id: "AF3678", room: "509/8", name: "G POORV", points: 0, floor: "5", active: true },
+    { id: "AE8197", room: "509/9", name: "OM LIMBANI", points: 0, floor: "5", active: true },
+    { id: "AF2312", room: "509/10", name: "DEV DUBEY", points: 0, floor: "5", active: true },
+    { id: "AE6531", room: "509/11", name: "SIDDHANT SURYAPRAKASH BAHETI", points: 0, floor: "5", active: true },
+    { id: "AF3207", room: "509/12", name: "KRISHNA GHANSHYAM POLAR", points: 0, floor: "5", active: true },
+    { id: "AF4730", room: "510/1", name: "SANIEL JAIKUMAR NAIDU", points: 0, floor: "5", active: true },
+    { id: "AF4429", room: "510/2", name: "KRUNAL KYADA", points: 0, floor: "5", active: true },
+    { id: "AD9575", room: "510/3", name: "ELCHAL ARAVIND REDDY", points: 0, floor: "5", active: true },
+    { id: "AF4921", room: "510/4", name: "ishant kumar", points: 0, floor: "5", active: true },
+    { id: "AF2644", room: "510/5", name: "BODAVALLA MANIDEEP SAI", points: 0, floor: "5", active: true },
+    { id: "AF4772", room: "510/6", name: "GOTLAPALLY ASHWATH GOUD", points: 0, floor: "5", active: true },
+    { id: "AF3769", room: "510/7", name: "AVANEESH SABYASACHI DAS", points: 0, floor: "5", active: true },
+    { id: "AD9314", room: "510/8", name: "NARAGUDEM JAYASIMHA REDDY", points: 0, floor: "5", active: true },
+    { id: "AF2916", room: "510/9", name: "SMEET VASANT POLAR", points: 0, floor: "5", active: true },
+    { id: "AE6080", room: "510/10", name: "RAHEEL ANAND PATEL", points: 0, floor: "5", active: true },
+    { id: "AF4326", room: "510/11", name: "MEER SHAILESH CHODVADIA", points: 0, floor: "5", active: true },
+    { id: "AD8298", room: "511/1", name: "mithun reddy musuku", points: 0, floor: "5", active: true },
+    { id: "AF4959", room: "511/2", name: "DAKSH MAHESH YEMULA", points: 0, floor: "5", active: true },
+    { id: "AE5891", room: "511/3", name: "T REVANTH REDDY", points: 0, floor: "5", active: true },
+    { id: "AE2512", room: "511/4", name: "Konde Rudhraksh", points: 0, floor: "5", active: true },
+    { id: "AF1027", room: "511/5", name: "BADDAM JASHWANTH REDDY", points: 0, floor: "5", active: true },
+    { id: "AF2915", room: "511/6", name: "Dhairya Dipak Bhappa", points: 0, floor: "5", active: true },
+    { id: "AE5078", room: "511/7", name: "BHAVYA KIRTIKUMAR PATEL", points: 0, floor: "5", active: true },
+    { id: "AF3497", room: "511/8", name: "ARYAN HITESH PATEL", points: 0, floor: "5", active: true },
+    { id: "AD8652", room: "511/9", name: "VISHWAJEET DHAGE", points: 0, floor: "5", active: true },
+    { id: "AD2298", room: "511/10", name: "AKULA DEVAK YADAV", points: 0, floor: "5", active: true },
+    { id: "AD7803", room: "511/11", name: "Vihaan Vishal Gujja", points: 0, floor: "5", active: true },
+    { id: "AD8305", room: "511/12", name: "NIPUN PATEL", points: 0, floor: "5", active: true },
+    { id: "AE6083", room: "512/1", name: "PINAK HITESH PATEL", points: 0, floor: "5", active: true },
+    { id: "AF3901", room: "512/2", name: "NAITIK HITESH PATEL", points: 0, floor: "5", active: true },
+    { id: "AF4413", room: "512/3", name: "PALEPU NIKHIL VEDAMSH", points: 0, floor: "5", active: true },
+    { id: "AD9538", room: "512/4", name: "SHAURYA KULKARNI", points: 0, floor: "5", active: true },
+    { id: "AE6047", room: "512/6", name: "G AVINASH", points: 0, floor: "5", active: true },
+    { id: "AE6274", room: "512/7", name: "SHASHANK SHIVANAND WADWAT", points: 0, floor: "5", active: true },
+    { id: "AF2327", room: "512/8", name: "HRITHVIK BURLA", points: 0, floor: "5", active: true },
+    { id: "AE5303", room: "512/9", name: "RATHOD NITHIN", points: 0, floor: "5", active: true },
+    { id: "AE5674", room: "512/10", name: "SANJAY KUMAR PATEL", points: 0, floor: "5", active: true },
+    { id: "AF2330", room: "512/11", name: "CHEPYALA ABIJITH REDDY", points: 0, floor: "5", active: true },
+    { id: "AD4730", room: "512/12", name: "DINDY ROHIL GANTA", points: 0, floor: "5", active: true },
+    { id: "AF3512", room: "513/1", name: "Daksheesh Hudge", points: 0, floor: "5", active: true },
+    { id: "AC8431", room: "513/2", name: "Kethavath Rohith", points: 0, floor: "5", active: true },
+    { id: "AD4897", room: "513/3", name: "RUDRA PRATAP SINGH", points: 0, floor: "5", active: true },
+    { id: "AF3840", room: "513/4", name: "MEET HITESH PATEL", points: 0, floor: "5", active: true },
+    { id: "AF4906", room: "513/6", name: "AARYA THAKUR", points: 0, floor: "5", active: true },
+    { id: "AF5496", room: "513/7", name: "RUDRA", points: 0, floor: "5", active: true },
+    { id: "AD9865", room: "513/8", name: "DEV MEHTA", points: 0, floor: "5", active: true },
+    { id: "AE5451", room: "513/9", name: "BHABANI SANKAR RATH", points: 0, floor: "5", active: true },
+    { id: "AF4986", room: "513/10", name: "ADWAITH BANDI", points: 0, floor: "5", active: true },
+    { id: "AD9552", room: "513/11", name: "PRAJOT VILAS CHALWA", points: 0, floor: "5", active: true },
+    { id: "AD6484", room: "513/12", name: "TERALA RISHIKESH", points: 0, floor: "5", active: true },
+    { id: "AF4182", room: "601/2", name: "VIHAAN REDDY KUNREDDY", points: 0, floor: "6", active: true },
+    { id: "AF9242", room: "601/3", name: "Poralla Naga Srinivasarao", points: 0, floor: "6", active: true },
+    { id: "AF2308", room: "601/4", name: "IDAMAKANTI KEDHARA NAAGA SAAI REDDY", points: 0, floor: "6", active: true },
+    { id: "AF4262", room: "601/5", name: "RUDRA MANOJ PATEL", points: 0, floor: "6", active: true },
+    { id: "AF9523", room: "601/6", name: "CHEBOLU SURYA MONISH SARMA", points: 0, floor: "6", active: true },
+    { id: "AF4635", room: "601/7", name: "PRASHANT KUMAR MAURYA", points: 0, floor: "6", active: true },
+    { id: "AG3177", room: "601/8", name: "THIPPIREDDY SHIVA", points: 0, floor: "6", active: true },
+    { id: "AG1191", room: "601/9", name: "KOPPINEEDI BUVAN KRISHNA DEVARAIYA", points: 0, floor: "6", active: true },
+    { id: "AF9363", room: "601/10", name: "Vutukuri sai kartheek", points: 0, floor: "6", active: true },
+    { id: "AF4881", room: "601/11", name: "TUNGA CHAITAN SAI", points: 0, floor: "6", active: true },
+    { id: "AF8581", room: "602/1", name: "KARANJI SATHVIK", points: 0, floor: "6", active: true },
+    { id: "AF3714", room: "602/2", name: "MADISETTI KUSHAL", points: 0, floor: "6", active: true },
+    { id: "AF6374", room: "602/3", name: "B KRISHNA VENKAT RAJU", points: 0, floor: "6", active: true },
+    { id: "AF2559", room: "602/4", name: "DHRUBHENDRA BHAKTA", points: 0, floor: "6", active: true },
+    { id: "AF4882", room: "602/5", name: "SHRI SHRIKANT KADAM", points: 0, floor: "6", active: true },
+    { id: "AG0592", room: "602/6", name: "REVANI VIKAS", points: 0, floor: "6", active: true },
+    { id: "AG0732", room: "602/7", name: "Shourya maru", points: 0, floor: "6", active: true },
+    { id: "AD7724", room: "602/8", name: "SEPELLI SHREYANSH", points: 0, floor: "6", active: true },
+    { id: "AE6022", room: "602/9", name: "katikaneni Arush Rao", points: 0, floor: "6", active: true },
+    { id: "AF9444", room: "602/10", name: "PAVULURI VENKATA SAI RUTVIK", points: 0, floor: "6", active: true },
+    { id: "AF2611", room: "602/12", name: "NEELAVENI LOKESH GOUD", points: 0, floor: "6", active: true },
+    { id: "AF4649", room: "602/13", name: "HARSHWARDHAN KUMAR", points: 0, floor: "6", active: true },
+    { id: "AF5852", room: "602/16", name: "PRANAV VARMA VATSAVAYI", points: 0, floor: "6", active: true },
+    { id: "AF6392", room: "602/17", name: "Shreeyash Jaideep Tompe", points: 0, floor: "6", active: true },
+    { id: "AF2727", room: "603/1", name: "AVIRAL MISHRA", points: 0, floor: "6", active: true },
+    { id: "AE9708", room: "603/2", name: "HARIT JAYKUMAR TRIVEDI", points: 0, floor: "6", active: true },
+    { id: "AF3328", room: "603/3", name: "JAY PATEL", points: 0, floor: "6", active: true },
+    { id: "AF2371", room: "603/4", name: "BANDI PARDHAV SAI", points: 0, floor: "6", active: true },
+    { id: "AG1698", room: "603/5", name: "VARUN BHATI", points: 0, floor: "6", active: true },
+    { id: "AG0741", room: "603/6", name: "G Reyansh", points: 0, floor: "6", active: true },
+        { id: "AF4316", room: "603/7", name: "TANAY LAKHAN BANOT", points: 0, floor: "6", active: true },
+    { id: "AG0162", room: "603/8", name: "KUMAR SUNDARAM SINGH", points: 0, floor: "6", active: true },
+    { id: "AF7136", room: "603/9", name: "BODA CHANDESH", points: 0, floor: "6", active: true },
+    { id: "AF9450", room: "603/10", name: "Avula Varun Gowtham", points: 0, floor: "6", active: true },
+    { id: "AF4389", room: "603/11", name: "PALAMPALLI LAKSHMI SATHWIK REDDY", points: 0, floor: "6", active: true },
+    { id: "AF3440", room: "603/12", name: "Chitraaditya Arkat", points: 0, floor: "6", active: true },
+    { id: "AF8383", room: "603/13", name: "ANKUSH CHOWDHURY", points: 0, floor: "6", active: true },
+    { id: "AF9215", room: "603/14", name: "KONDADI VILOK TEJA", points: 0, floor: "6", active: true },
+    { id: "AG0039", room: "603/15", name: "BHEEMANA KAARTHIKEYA CHOWDARY", points: 0, floor: "6", active: true },
+    { id: "AF4368", room: "604/1", name: "UNDRALLA MAYUSH REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9689", room: "604/2", name: "MALLIPEDDI AADHVIK", points: 0, floor: "6", active: true },
+    { id: "AF6569", room: "604/3", name: "PRATYUSH NAIDU LOLUGU", points: 0, floor: "6", active: true },
+    { id: "AF3506", room: "604/4", name: "Annam Haneesh reddy", points: 0, floor: "6", active: true },
+    { id: "AF9241", room: "604/5", name: "Gurajala Yeshwin Veera Sai", points: 0, floor: "6", active: true },
+    { id: "AG0225", room: "604/6", name: "Keshav varma gottumukkala", points: 0, floor: "6", active: true },
+    { id: "AG0571", room: "604/7", name: "Adithya Goud Ganagani", points: 0, floor: "6", active: true },
+    { id: "AG0258", room: "604/8", name: "BHUMIREDDY NARAPUREDDY RISHIKESH REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9246", room: "604/9", name: "Chamarthi Pradyumna Raju", points: 0, floor: "6", active: true },
+    { id: "AF9628", room: "604/10", name: "KONDREDDY JOSHIT SAI REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9296", room: "604/11", name: "GORA RISHI GOUD", points: 0, floor: "6", active: true },
+    { id: "AG1460", room: "604/12", name: "CHAKALI JAYASHWAR", points: 0, floor: "6", active: true },
+    { id: "AF9275", room: "604/13", name: "JAIVANTH MANE", points: 0, floor: "6", active: true },
+    { id: "AF9212", room: "604/14", name: "MAMIDI PUNEETH RAJ YADAV", points: 0, floor: "6", active: true },
+    { id: "AF6074", room: "604/15", name: "ALLALA SAI VARSHITH REDDY", points: 0, floor: "6", active: true },
+    { id: "AF2509", room: "605/1", name: "TALASILA JAYA ABHINAV", points: 0, floor: "6", active: true },
+    { id: "AF3401", room: "605/2", name: "APPANI RITVIJ", points: 0, floor: "6", active: true },
+    { id: "AF9686", room: "605/3", name: "VANSH CHAVAN", points: 0, floor: "6", active: true },
+    { id: "AF3525", room: "605/4", name: "AKULA SHASHANK", points: 0, floor: "6", active: true },
+    { id: "AF9331", room: "605/5", name: "BAKKERA SRIKAR", points: 0, floor: "6", active: true },
+    { id: "AG0389", room: "605/6", name: "YAMJALA AKSHITH REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9379", room: "605/7", name: "GOUNDLA ADDHVVYITH GOUD", points: 0, floor: "6", active: true },
+    { id: "AG0391", room: "605/8", name: "NIKHILESH GURRAM", points: 0, floor: "6", active: true },
+    { id: "AF9481", room: "605/9", name: "CHENNUPATI ROHAN", points: 0, floor: "6", active: true },
+    { id: "AF9733", room: "605/10", name: "VEGESNA HARSHITHRAM RAJU", points: 0, floor: "6", active: true },
+    { id: "AF9494", room: "605/11", name: "AYUSHMAAN R CHAVAN", points: 0, floor: "6", active: true },
+    { id: "AG1828", room: "605/12", name: "SAMAR SINGH DAHIYA", points: 0, floor: "6", active: true },
+    { id: "AF9507", room: "605/13", name: "Naitik Gangji", points: 0, floor: "6", active: true },
+    { id: "AF9210", room: "605/14", name: "BODDU YEESHWAR", points: 0, floor: "6", active: true },
+    { id: "AF9272", room: "605/15", name: "RIDHAAN HALDER", points: 0, floor: "6", active: true },
+    { id: "AF9303", room: "606/1", name: "MANEPALLI HEMANTH", points: 0, floor: "6", active: true },
+    { id: "AF9230", room: "606/2", name: "Dhawan Gehlot", points: 0, floor: "6", active: true },
+    { id: "AG0455", room: "606/3", name: "NAGAROOR HARSHITH KRISHNA", points: 0, floor: "6", active: true },
+    { id: "AF3675", room: "606/4", name: "MANISH REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9665", room: "606/5", name: "VELPULA SUPRITH", points: 0, floor: "6", active: true },
+    { id: "AG0422", room: "606/6", name: "TANDRA DHEERAJ", points: 0, floor: "6", active: true },
+    { id: "AF9667", room: "606/7", name: "S G ASHWATH", points: 0, floor: "6", active: true },
+    { id: "AF9521", room: "606/8", name: "Chandika Gyana Deep", points: 0, floor: "6", active: true },
+    { id: "AF9668", room: "606/9", name: "B.vedanth", points: 0, floor: "6", active: true },
+    { id: "AF9743", room: "606/10", name: "KROVVIDI BANGAR RAJU", points: 0, floor: "6", active: true },
+    { id: "AF9673", room: "606/11", name: "DHUMMI VISHWANATH", points: 0, floor: "6", active: true },
+    { id: "AG2042", room: "606/12", name: "RAJAT JATIN GOGARI", points: 0, floor: "6", active: true },
+    { id: "AF9674", room: "606/13", name: "BOPPANI KUSHAL", points: 0, floor: "6", active: true },
+    { id: "AF9252", room: "606/14", name: "KOTHAMASU RITHWIK", points: 0, floor: "6", active: true },
+    { id: "AF9781", room: "606/15", name: "NAMAN PATEL", points: 0, floor: "6", active: true },
+    { id: "AF2635", room: "607/1", name: "EDLA RAHUL", points: 0, floor: "6", active: true },
+    { id: "AF9776", room: "607/2", name: "SHIVARAM KARTHIK REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9211", room: "607/3", name: "SURAPANENI RAMNARAYAN", points: 0, floor: "6", active: true },
+    { id: "AF6829", room: "607/4", name: "MADURI SAITEJA", points: 0, floor: "6", active: true },
+    { id: "AF9900", room: "607/5", name: "GATTA AKSHAY SAI", points: 0, floor: "6", active: true },
+    { id: "AG0583", room: "607/6", name: "Kraleti Bhaskar Agastya", points: 0, floor: "6", active: true },
+    { id: "AF9906", room: "607/7", name: "Gaddam Srijith Reddy", points: 0, floor: "6", active: true },
+    { id: "AG0682", room: "607/8", name: "N MEGAN BHAGAT", points: 0, floor: "6", active: true },
+    { id: "AF9221", room: "607/9", name: "CHITKULA SAI REYANSH REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9775", room: "607/10", name: "SHIVARAM DHEERAJ REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9968", room: "607/11", name: "AKSHAJ U", points: 0, floor: "6", active: true },
+    { id: "AG2290", room: "607/12", name: "ALETI SUSHANTH REDDY", points: 0, floor: "6", active: true },
+    { id: "AG0033", room: "607/13", name: "GUDIPATI MAHADEV SAI", points: 0, floor: "6", active: true },
+    { id: "AF9278", room: "607/14", name: "Menga Vidhat", points: 0, floor: "6", active: true },
+    { id: "AG0045", room: "607/15", name: "Gunda Vashish", points: 0, floor: "6", active: true },
+    { id: "AF5387", room: "608/1", name: "GOLLA HARSHITH YADAV", points: 0, floor: "6", active: true },
+    { id: "AG0743", room: "608/2", name: "Marcus Laishram", points: 0, floor: "6", active: true },
+    { id: "AD5606", room: "608/3", name: "GAURANG DEV CHHIBBER", points: 0, floor: "6", active: true },
+    { id: "AG0859", room: "608/4", name: "PATLOLLA VISHWANATH REDDY", points: 0, floor: "6", active: true },
+    { id: "AG0076", room: "608/5", name: "Shubham agrawal", points: 0, floor: "6", active: true },
+    { id: "AG0872", room: "608/6", name: "EELE KARUNAKAR REDDY", points: 0, floor: "6", active: true },
+    { id: "AG0077", room: "608/7", name: "RUDRANSH SANTHOSHRAO JADHAV", points: 0, floor: "6", active: true },
+    { id: "AG0965", room: "608/8", name: "GADIRAJU KUSHAL VARMA", points: 0, floor: "6", active: true },
+    { id: "AG0141", room: "608/9", name: "KAVAN KESHRANI", points: 0, floor: "6", active: true },
+    { id: "AF9843", room: "608/10", name: "SHAURYA SINGH", points: 0, floor: "6", active: true },
+    { id: "AG0155", room: "608/11", name: "NARENDRA MAHESH TIPRESWER", points: 0, floor: "6", active: true },
+    { id: "AE5437", room: "608/12", name: "Baddigam Vrishank Sri Saran Reddy", points: 0, floor: "6", active: true },
+    { id: "AG0217", room: "608/13", name: "Paradesi Nikhil Reddy", points: 0, floor: "6", active: true },
+    { id: "AG0857", room: "608/14", name: "Bondla Vignesh Reddy", points: 0, floor: "6", active: true },
+    { id: "AG0227", room: "608/15", name: "GANNAVARAPU SREEKAR", points: 0, floor: "6", active: true },
+    { id: "AG0232", room: "608/16", name: "NANDI BRUNDHAN", points: 0, floor: "6", active: true },
+    { id: "AE9954", room: "609/1", name: "NARENDER MALI", points: 0, floor: "6", active: true },
+    { id: "AF6075", room: "609/2", name: "PINGILI VARSHHITH KUMAR REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9711", room: "609/3", name: "P ARNAV SAI", points: 0, floor: "6", active: true },
+    { id: "AG1109", room: "609/4", name: "A. ABHIJAY NAG", points: 0, floor: "6", active: true },
+    { id: "AF7245", room: "609/6", name: "GADHIYA BHAVIK HARESHBHAI", points: 0, floor: "6", active: true },
+    { id: "AG0397", room: "609/7", name: "POSHAL NAREN", points: 0, floor: "6", active: true },
+    { id: "AG1374", room: "609/8", name: "DIPESH CHOUDARY", points: 0, floor: "6", active: true },
+    { id: "AG0480", room: "609/9", name: "Bandamedi Manotej", points: 0, floor: "6", active: true },
+    { id: "AG1253", room: "609/10", name: "ADDALA SRIKESH REDDY", points: 0, floor: "6", active: true },
+    { id: "AG1220", room: "609/11", name: "DHULIPUDI BHUVAN CHANDRA", points: 0, floor: "6", active: true },
+    { id: "AG2739", room: "609/12", name: "Baluguri Rajiv Kanth", points: 0, floor: "6", active: true },
+    { id: "AG0588", room: "609/15", name: "Konda Kruthik Sai", points: 0, floor: "6", active: true },
+    { id: "AF9799", room: "610/1", name: "JAIVAL MEHUL JARIVALA", points: 0, floor: "6", active: true },
+    { id: "AF7927", room: "610/2", name: "Y TRISHUL GOUD", points: 0, floor: "6", active: true },
+    { id: "AG0617", room: "610/3", name: "Vidit Umakant Dongare", points: 0, floor: "6", active: true },
+    { id: "AG1811", room: "610/4", name: "NARENDRA KUMAR", points: 0, floor: "6", active: true },
+    { id: "AF3695", room: "610/5", name: "PRUTHVIRAJ BHAGVAT CHAME", points: 0, floor: "6", active: true },
+    { id: "AG0644", room: "610/7", name: "KALLEM SHASHIWANTH REDDY", points: 0, floor: "6", active: true },
+    { id: "AG1912", room: "610/8", name: "CHAGANTI YAGNA TEJA", points: 0, floor: "6", active: true },
+    { id: "AG0392", room: "610/9", name: "PATLOLLA SHRIANK REDDY", points: 0, floor: "6", active: true },
+    { id: "AG0738", room: "610/11", name: "Ansh Agarwal", points: 0, floor: "6", active: true },
+    { id: "AG1464", room: "610/14", name: "Adhyan Tulsyan", points: 0, floor: "6", active: true },
+    { id: "AG1340", room: "610/15", name: "LOMAS KHETANI", points: 0, floor: "6", active: true },
+    { id: "AG1381", room: "611/1", name: "MAGANTI SRIKAR KRISHNA", points: 0, floor: "6", active: true },
+    { id: "AG2293", room: "611/2", name: "DISHANTH", points: 0, floor: "6", active: true },
+    { id: "AG0564", room: "611/3", name: "ERIKK CHABUNGBAM", points: 0, floor: "6", active: true },
+    { id: "AG2485", room: "611/4", name: "Devulapalli Nagavardhan", points: 0, floor: "6", active: true },
+    { id: "AG1983", room: "611/5", name: "PASUPULA RAMAGAUTHAM REDDY", points: 0, floor: "6", active: true },
+    { id: "AF7141", room: "611/7", name: "BHAANVISHAK SAI SARAPU", points: 0, floor: "6", active: true },
+    { id: "AG2737", room: "611/8", name: "KARTAVYA JAIN", points: 0, floor: "6", active: true },
+    { id: "AG2038", room: "611/9", name: "DARPAL JAISURYA", points: 0, floor: "6", active: true },
+    { id: "AG0148", room: "611/10", name: "PATLORI VISHWANTH REDDY", points: 0, floor: "6", active: true },
+    { id: "AG2188", room: "611/11", name: "D TANISH GOUD", points: 0, floor: "6", active: true },
+    { id: "AG2745", room: "611/12", name: "SUMEET SANDEEP CHOPDA", points: 0, floor: "6", active: true },
+    { id: "AG1167", room: "611/13", name: "R AKHILESWAR REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9512", room: "611/15", name: "LAXMIPURAM SAI VARSHITH REDDY", points: 0, floor: "6", active: true },
+    { id: "AF9770", room: "612/1", name: "M DAKSHISH REDDY", points: 0, floor: "6", active: true },
+    { id: "AG2875", room: "612/2", name: "KRISHNA CHANDRAKANT DIGHE", points: 0, floor: "6", active: true },
+    { id: "AF9480", room: "612/3", name: "CHUNDI RANA", points: 0, floor: "6", active: true },
+    { id: "AG2911", room: "612/4", name: "ADARSH BIRADAR", points: 0, floor: "6", active: true },
+    { id: "AF9479", room: "612/5", name: "BOGGALA VARUN TEJ", points: 0, floor: "6", active: true },
+    { id: "AF5112", room: "612/6", name: "SHRI ADVIK KUMAR CHATLAPALLI", points: 0, floor: "6", active: true },
+    { id: "AF9626", room: "612/7", name: "KARAMANJOT SINGH", points: 0, floor: "6", active: true },
+    { id: "AG3867", room: "612/8", name: "SAVINDAR SINGH", points: 0, floor: "6", active: true },
+    { id: "AF1828", room: "612/9", name: "YATHARTH PANKAJ PARALIKAR", points: 0, floor: "6", active: true },
+    { id: "AG0211", room: "612/10", name: "PRAYAGA VENKATA BALA TRILOCHANA SASTRY", points: 0, floor: "6", active: true },
+    { id: "AF9276", room: "612/12", name: "GOVINDHU PRANAV AKSHAY", points: 0, floor: "6", active: true },
+    { id: "AF9328", room: "612/13", name: "Pulluru Tanush Kumar", points: 0, floor: "6", active: true },
+    { id: "AF1206", room: "612/14", name: "B ABIRAM GOUD", points: 0, floor: "6", active: true },
+    { id: "AF9362", room: "612/15", name: "NAIKOTI RITHIK", points: 0, floor: "6", active: true },
+    { id: "AF9581", room: "613/1", name: "PASUMARTI VARNIT SATYA CHOWDARY", points: 0, floor: "6", active: true },
+    { id: "AF4942", room: "613/2", name: "SHRIDHAR SHIVLING BHURE", points: 0, floor: "6", active: true },
+    { id: "AG0326", room: "613/4", name: "SARVESH BALBHIM BIRADAR", points: 0, floor: "6", active: true },
+    { id: "AG0382", room: "613/5", name: "CHITTIGIDDA SAI NANDAN REDDY", points: 0, floor: "6", active: true },
+    { id: "AG0294", room: "613/7", name: "Soma Veerabhadra sai mahadev", points: 0, floor: "6", active: true },
+    { id: "AG0421", room: "613/8", name: "PISHATI AARUSH REDDY", points: 0, floor: "6", active: true },
+    { id: "AG0742", room: "613/9", name: "Sorokhaibam Jerison Singh", points: 0, floor: "6", active: true },
+    { id: "AG0216", room: "613/10", name: "ATULYA KUCHIMANCHI", points: 0, floor: "6", active: true },
+    { id: "AG0902", room: "613/12", name: "VELUGURI RUPESH", points: 0, floor: "6", active: true },
+    { id: "AF3564", room: "613/13", name: "ILURI ADITYA", points: 0, floor: "6", active: true },
+    { id: "AG4166", room: "613/14", name: "VISHWANATHAM SRIANSH", points: 0, floor: "6", active: true },
+    { id: "AF2348", room: "613/15", name: "SANGAMESH BELURE", points: 0, floor: "6", active: true },
+    { id: "AG4505", room: "613/16", name: "Hemendra Kumar Joshi", points: 0, floor: "6", active: true }
+        ];
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtanJUJCZmcvGf_JS0ffKc1SlhMW8aWug",
+            authDomain: "gstatus-304a8.firebaseapp.com",
+            databaseURL: "https://gstatus-304a8-default-rtdb.firebaseio.com",
+            projectId: "gstatus-304a8",
+            storageBucket: "gstatus-304a8.appspot.com",
+            messagingSenderId: "382807331706",
+            appId: "1:382807331706:web:c9e2a5236753e97580bcc3"
+        };
+        
+        // Initialize Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch (err) {
+            console.error("Firebase initialization error", err);
+        }
+
+        // Global variables
+        let students = [];
+        let responseHistory = [];
+        const database = firebase.database();
+
+        // DOM elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Show loading spinner
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+
+        // Hide loading spinner
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        // Save students to Firebase
+        function saveStudentsToFirebase(students) {
+            showLoading();
+            return database.ref('students').set(students)
+                .then(() => {
+                    console.log("Students saved to Firebase");
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error("Error saving students:", error);
+                    hideLoading();
+                    throw error;
+                });
+        }
+
+        // Load students from Firebase
+        function loadStudentsFromFirebase() {
+            showLoading();
+            return database.ref('students').once('value')
+                .then(snapshot => {
+                    const data = snapshot.val();
+                    hideLoading();
+                    return data || [];
+                })
+                .catch(error => {
+                    console.error("Error loading students:", error);
+                    hideLoading();
+                    return [];
+                });
+        }
+
+        // Save history to Firebase
+        function saveHistoryToFirebase(history) {
+            showLoading();
+            return database.ref('history').set(history)
+                .then(() => {
+                    console.log("History saved to Firebase");
+                    hideLoading();
+                })
+                .catch(error => {
+                    console.error("Error saving history:", error);
+                    hideLoading();
+                    throw error;
+                });
+        }
+
+        // Load history from Firebase
+        function loadHistoryFromFirebase() {
+            showLoading();
+            return database.ref('history').once('value')
+                .then(snapshot => {
+                    const data = snapshot.val();
+                    hideLoading();
+                    return data || [];
+                })
+                .catch(error => {
+                    console.error("Error loading history:", error);
+                    hideLoading();
+                    return [];
+                });
+        }
+
+        // Initialize the application
+        async function initializeApp() {
+            try {
+                showLoading();
+                
+                // Load data from Firebase
+                const [studentsData, historyData] = await Promise.all([
+                    loadStudentsFromFirebase(),
+                    loadHistoryFromFirebase()
+                ]);
+
+                // If no students in Firebase, use default data and save to Firebase
+                if (studentsData.length === 0) {
+                    students = allStudents;
+                    await saveStudentsToFirebase(students);
+                } else {
+                    students = studentsData;
+                }
+
+                // Set history
+                responseHistory = historyData;
+
+                // Update UI
+                refreshRankings();
+                refreshResponses();
+                document.getElementById('totalStudents').textContent = students.length;
+                document.getElementById('activeStudents').textContent = students.filter(s => s.active).length;
+                document.getElementById('dbStatus').textContent = 'Connected';
+                document.getElementById('dbStatus').className = 'badge bg-success';
+
+                // Initialize event listeners
+                initializeEventListeners();
+                
+            } catch (error) {
+                console.error("Error initializing app:", error);
+                document.getElementById('dbStatus').textContent = 'Disconnected';
+                document.getElementById('dbStatus').className = 'badge bg-danger';
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Initialize all event listeners
+        function initializeEventListeners() {
+            // Positive action dropdown
+            document.getElementById('positiveAction').addEventListener('change', function() {
+                document.getElementById('examPercentage').style.display = this.value === 'exam' ? 'block' : 'none';
+            });
+
+            // Points form submission
+            document.getElementById('pointsForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const selectedStudentIds = Array.from(document.querySelectorAll('input[name="selectedStudents"]:checked')).map(input => input.value);
+                const positiveAction = document.getElementById('positiveAction').value;
+                const negativeAction = document.querySelector('[name="negativeAction"]').value;
+                const percentageInput = document.getElementById('percentageInput').value;
+                const updateMessage = document.getElementById('updateMessage');
+
+                if (!selectedStudentIds.length) {
+                    updateMessage.classList.remove('alert-success');
+                    updateMessage.classList.add('alert-danger');
+                    updateMessage.textContent = 'Please select at least one student.';
+                    updateMessage.style.display = 'block';
+                    setTimeout(() => updateMessage.style.display = 'none', 3000);
+                    return;
+                }
+
+                let points = 0;
+                let actionText = '';
+                
+                if (positiveAction && negativeAction) {
+                    updateMessage.classList.remove('alert-success');
+                    updateMessage.classList.add('alert-danger');
+                    updateMessage.textContent = 'Please select only one action (positive or negative).';
+                    updateMessage.style.display = 'block';
+                    setTimeout(() => updateMessage.style.display = 'none', 3000);
+                    return;
+                } else if (positiveAction) {
+                    if (positiveAction === 'exam') {
+                        const percentage = parseInt(percentageInput);
+                        if (isNaN(percentage) || percentage < 0 || percentage > 100) {
+                            updateMessage.classList.remove('alert-success');
+                            updateMessage.classList.add('alert-danger');
+                            updateMessage.textContent = 'Please enter a valid percentage (0-100).';
+                            updateMessage.style.display = 'block';
+                            setTimeout(() => updateMessage.style.display = 'none', 3000);
+                            return;
+                        }
+                        points = percentage >= 90 ? 20 : percentage >= 80 ? 15 : percentage >= 70 ? 10 : 5;
+                        actionText = `Exam Percentage (${percentage}%)`;
+                    } else {
+                        points = parseInt(positiveAction);
+                        actionText = document.querySelector(`#positiveAction option[value="${positiveAction}"]`).text;
+                    }
+                } else if (negativeAction) {
+                    points = parseInt(negativeAction);
+                    actionText = document.querySelector(`select[name="negativeAction"] option[value="${negativeAction}"]`).text;
+                } else {
+                    updateMessage.classList.remove('alert-success');
+                    updateMessage.classList.add('alert-danger');
+                    updateMessage.textContent = 'Please select an action.';
+                    updateMessage.style.display = 'block';
+                    setTimeout(() => updateMessage.style.display = 'none', 3000);
+                    return;
+                }
+
+                const now = new Date();
+                const date = now.toLocaleDateString('en-GB');
+                const time = now.toLocaleTimeString('en-GB');
+
+                try {
+                    // Update students and history
+                    selectedStudentIds.forEach(studentId => {
+                        const student = students.find(s => s.id === studentId);
+                        if (student) {
+                            student.points += points;
+                            responseHistory.unshift({
+                                date,
+                                time,
+                                studentId,
+                                name: student.name,
+                                action: actionText,
+                                pointsChanged: points
+                            });
+                        }
+                    });
+
+                    // Save to Firebase
+                    await Promise.all([
+                        saveStudentsToFirebase(students),
+                        saveHistoryToFirebase(responseHistory)
+                    ]);
+
+                    updateMessage.classList.remove('alert-danger');
+                    updateMessage.classList.add('alert-success');
+                    updateMessage.innerHTML = `
+                        <i class="fas fa-check-circle"></i> Points updated for ${selectedStudentIds.length} student(s): 
+                        <strong>${points > 0 ? '+' : ''}${points} points</strong> each for "${actionText}".
+                    `;
+                    updateMessage.style.display = 'block';
+                    setTimeout(() => updateMessage.style.display = 'none', 5000);
+
+                    // Reset form and refresh data
+                    document.getElementById('pointsForm').reset();
+                    document.getElementById('examPercentage').style.display = 'none';
+                    document.getElementById('searchResultsPoints').innerHTML = '';
+                    document.getElementById('searchQueryPoints').value = '';
+                    refreshRankings();
+                    refreshResponses();
+                } catch (error) {
+                    console.error("Error updating points:", error);
+                    updateMessage.classList.remove('alert-success');
+                    updateMessage.classList.add('alert-danger');
+                    updateMessage.textContent = 'Error updating points. Please try again.';
+                    updateMessage.style.display = 'block';
+                    setTimeout(() => updateMessage.style.display = 'none', 5000);
+                }
+            });
+
+            // Update remark function
+            window.updateRemark = async function(studentId, newRemark) {
+                const student = students.find(s => s.id === studentId);
+                if (student) {
+                    student.remark = newRemark;
+                    try {
+                        await saveStudentsToFirebase(students);
+                    } catch (error) {
+                        console.error("Error updating remark:", error);
+                    }
+                }
+            };
+
+            // Clear history
+            document.getElementById('clearHistory').addEventListener('click', async function() {
+                if (confirm('Are you sure you want to clear all history records? This cannot be undone.')) {
+                    try {
+                        responseHistory = [];
+                        await saveHistoryToFirebase(responseHistory);
+                        refreshResponses();
+                        
+                        const updateMessage = document.getElementById('updateMessage');
+                        updateMessage.classList.remove('alert-danger');
+                        updateMessage.classList.add('alert-success');
+                        updateMessage.innerHTML = '<i class="fas fa-check-circle"></i> History records cleared successfully.';
+                        updateMessage.style.display = 'block';
+                        setTimeout(() => updateMessage.style.display = 'none', 3000);
+                    } catch (error) {
+                        console.error("Error clearing history:", error);
+                    }
+                }
+            });
+
+            // Export to Excel
+            document.getElementById('exportRankings').addEventListener('click', exportToExcel);
+
+            // Search functionality
+            handleSearch('searchQueryPoints', 'searchResultsPoints');
+            handleSearch('searchQueryRankings', 'searchResultsRankings');
+            
+            // Refresh buttons
+            document.getElementById('refreshRankings').addEventListener('click', refreshRankings);
+            document.getElementById('gradeFilter').addEventListener('change', refreshRankings);
+            document.getElementById('floorFilter').addEventListener('change', refreshRankings);
+        }
+
+        // Handle search functionality
+        function handleSearch(inputId, resultsId) {
+            document.getElementById(inputId).addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                const results = document.getElementById(resultsId);
+                results.innerHTML = '';
+                
+                if (query) {
+                    const filteredStudents = students.filter(student => {
+    // Add null checks for all properties
+    const name = student.name ? student.name.toLowerCase() : '';
+    const id = student.id ? student.id.toLowerCase() : '';
+    const room = student.room ? student.room.toLowerCase() : '';
+    const floor = student.floor ? student.floor.toString().toLowerCase() : '';
+    
+    const query = this.value.toLowerCase().trim();
+    
+    return name.includes(query) || 
+           id.includes(query) || 
+           room.includes(query) || 
+           floor.includes(query);
+});
+                    if (filteredStudents.length) {
+                        filteredStudents.forEach(student => {
+                            const studentCard = document.createElement('div');
+                            studentCard.className = 'col-md-6 mb-3';
+                            studentCard.innerHTML = `
+                                <div class="card student-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <h5 class="card-title">${student.name}</h5>
+                                            <span class="points-badge ${student.points >= 0 ? 'positive-points' : 'negative-points'}">
+                                                ${student.points > 0 ? '+' : ''}${student.points} pts
+                                            </span>
+                                        </div>
+                                        <p class="card-text mb-1">
+                                            <i class="fas fa-id-card"></i> ${student.id} 
+                                            | <i class="fas fa-door-open"></i> ${student.room}
+                                            | <i class="fas fa-layer-group"></i> ${student.floor} Floor
+                                        </p>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                name="${inputId === 'searchQueryPoints' ? 'selectedStudents' : 'selectedRankings'}" 
+                                                value="${student.id}" 
+                                                id="${inputId}_${student.id}">
+                                            <label class="form-check-label" for="${inputId}_${student.id}">
+                                                Select student
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            results.appendChild(studentCard);
+                        });
+                    } else {
+                        results.innerHTML = '<div class="col-12"><div class="alert alert-info">No students found matching your search.</div></div>';
+                    }
+                }
+            });
+        }
+
+        // Refresh rankings table
+        function refreshRankings() {
+            const rankingsTable = document.getElementById('rankingsTable');
+            const gradeFilter = document.getElementById('gradeFilter').value;
+            const floorFilter = document.getElementById('floorFilter').value;
+            
+            let sortedStudents = [...students].sort((a, b) => b.points - a.points);
+
+            // Assign grades based on ranking
+            sortedStudents.forEach((student, index) => {
+                if (index < 10) student.assignedGrade = 'A+';
+                else if (index < 40) student.assignedGrade = 'A'
+                                else if (index < 100) student.assignedGrade = 'B';
+                else if (index < 150) student.assignedGrade = 'C';
+                else student.assignedGrade = 'D';
+            });
+
+            // Apply filters
+            if (gradeFilter !== 'all') {
+                sortedStudents = sortedStudents.filter(s => s.assignedGrade === gradeFilter);
+            }
+            
+            if (floorFilter !== 'all') {
+                sortedStudents = sortedStudents.filter(s => s.floor === floorFilter);
+            }
+
+            rankingsTable.innerHTML = '';
+            
+            sortedStudents.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${student.id}</td>
+                    <td>${student.name}</td>
+                    <td>${student.room}</td>
+                    <td>${student.floor}</td>
+                    <td class="${student.points >= 0 ? 'text-success' : 'text-danger'}">
+                        ${student.points > 0 ? '+' : ''}${student.points}
+                    </td>
+                    <td>
+                        <span class="badge ${getGradeBadgeClass(student.assignedGrade)}">
+                            ${student.assignedGrade}
+                        </span>
+                    </td>
+                    <td>
+                        <input type="text" class="remark-input" 
+                            value="${student.remark || ''}" 
+                            onchange="updateRemark('${student.id}', this.value)">
+                    </td>
+                `;
+                rankingsTable.appendChild(row);
+            });
+        }
+
+        // Get badge class based on grade
+        function getGradeBadgeClass(grade) {
+            switch(grade) {
+                case 'A+': return 'bg-success';
+                case 'A': return 'bg-primary';
+                case 'B': return 'bg-info';
+                case 'C': return 'bg-warning';
+                case 'D': return 'bg-danger';
+                default: return 'bg-secondary';
+            }
+        }
+
+        // Refresh responses table
+        function refreshResponses() {
+            const responseTable = document.getElementById('responseTable');
+            responseTable.innerHTML = '';
+            
+            responseHistory.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.date}</td>
+                    <td>${entry.time}</td>
+                    <td>${entry.studentId}</td>
+                    <td>${entry.name}</td>
+                    <td>${entry.action}</td>
+                    <td class="${entry.pointsChanged >= 0 ? 'text-success' : 'text-danger'}">
+                        ${entry.pointsChanged > 0 ? '+' : ''}${entry.pointsChanged}
+                    </td>
+                `;
+                responseTable.appendChild(row);
+            });
+        }
+
+        // Export to Excel
+        function exportToExcel() {
+            const wb = XLSX.utils.book_new();
+            const wsData = [
+                ['Rank', 'Student ID', 'Name', 'Room', 'Floor', 'Points', 'Grade', 'Remark'],
+                ...students
+                    .sort((a, b) => b.points - a.points)
+                    .map((student, index) => [
+                        index + 1,
+                        student.id,
+                        student.name,
+                        student.room,
+                        student.floor,
+                        student.points,
+                        student.assignedGrade || '',
+                        student.remark || ''
+                    ])
+            ];
+            
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            XLSX.utils.book_append_sheet(wb, ws, 'Student Rankings');
+            XLSX.writeFile(wb, 'Gurukul_Points_Rankings.xlsx');
+        }
+
+        // Start the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
